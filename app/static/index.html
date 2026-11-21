@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Workboard · Document workspace</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <main>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Workboard home"><span class="brand-mark" aria-hidden="true">W</span><span>Workboard<span class="brand-caption">A little space for your team's ideas.</span></span></a>
+      <span class="lab-badge"><span aria-hidden="true"></span> Local workspace</span>
+    </header>
+    <section id="login-panel" class="login-card">
+      <span class="eyebrow">YOUR TEAM, IN ONE PLACE</span>
+      <h1>Welcome back.</h1>
+      <p class="muted">Sign in to read, discuss and work on your team's documents.</p>
+      <form id="login-form">
+        <label for="email">Email address</label>
+        <input id="email" type="email" value="member@atlas.test" autocomplete="username" required/>
+        <label for="password">Password</label>
+        <input id="password" type="password" value="AtlasMember123!" autocomplete="current-password" required/>
+        <button id="login-submit" class="primary" type="submit">Sign in to workspace <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="login-note">Demo accounts belong to Atlas or Boreal.<br/>Use an admin account to edit documents.</p>
+    </section>
+    <section id="app-panel" hidden>
+      <div class="workspace-heading">
+        <div><span class="eyebrow">TEAM WORKSPACE</span><h1 id="workspace-title">Your workspace</h1><p class="muted">Keep your documents and conversations together.</p></div>
+        <div class="account"><span id="user-avatar" class="avatar" aria-hidden="true"></span><div><span id="who"></span><span id="role" class="role-badge"></span></div><button id="logout" class="quiet" type="button">Sign out</button></div>
+      </div>
+      <div class="cols">
+        <aside class="documents-card card" aria-label="Document navigation">
+          <div class="section-heading"><h2>Documents</h2><span id="doc-count" class="count">0</span></div>
+          <form id="search-form" class="search-form" role="search">
+            <label class="sr-only" for="search">Search documents</label>
+            <input id="search" placeholder="Search by title…" maxlength="100" type="search"/>
+            <button class="secondary" type="submit">Search</button>
+          </form>
+          <div id="search-results" hidden>
+            <div class="search-heading"><span>Search results</span><button id="clear-search" class="text-button" type="button">Clear</button></div>
+            <ul id="results" class="document-list"></ul>
+          </div>
+          <ul id="docs" class="document-list"></ul>
+          <p class="sidebar-note">A shared place for plans, notes and what's next.</p>
+        </aside>
+        <section class="reader-card card" aria-label="Document reader">
+          <div id="empty-state" class="empty-state"><span class="empty-icon" aria-hidden="true">▤</span><h2>A place for your next idea</h2><p class="muted">Choose a document from the list to start reading.</p></div>
+          <div id="document-panel" hidden>
+            <div class="document-toolbar"><span id="doc-meta" class="eyebrow"></span><button id="edit-doc" class="secondary" type="button" hidden><span aria-hidden="true">✎</span> Edit document</button></div>
+            <div id="document-view"><h2 id="doc-title" class="document-title"></h2><p id="doc-content" class="document-content"></p></div>
+            <form id="edit-form" class="edit-form" hidden>
+              <h2>Edit document</h2>
+              <label for="edit-title">Document title</label>
+              <input id="edit-title" maxlength="100" required/>
+              <label for="edit-content">Content</label>
+              <textarea id="edit-content" maxlength="4000" rows="8"></textarea>
+              <div class="form-actions"><button id="save-doc" class="primary" type="submit">Save changes</button><button id="cancel-edit" class="quiet" type="button">Cancel</button></div>
+            </form>
+            <section class="discussion" aria-labelledby="comments-heading">
+              <div class="section-heading"><h3 id="comments-heading">Conversation</h3><span id="comment-count" class="count">0</span></div>
+              <div id="comments"></div>
+              <form id="comment-form" hidden>
+                <label for="comment-text">Add a comment</label>
+                <textarea id="comment-text" placeholder="Share a thought with your team…" maxlength="1000" rows="3" required></textarea>
+                <div class="form-actions"><button id="post-comment" class="primary" type="submit">Post comment</button></div>
+              </form>
+            </section>
+          </div>
+        </section>
+      </div>
+    </section>
+    <div id="error" role="alert" hidden></div>
+    <div id="status" role="status" hidden></div>
+    <footer><span>Workboard · Built for collaboration.</span><span>Local AppSec training environment</span></footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

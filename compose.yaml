@@ -1,0 +1,22 @@
+services:
+  workboard:
+    build: .
+    image: appsec-workboard-local:0.1.0
+    environment:
+      APP_SECRET: "local-only-example-secret-do-not-use-in-production-2026"
+      DB_PATH: /data/workboard.db
+    ports:
+      - "127.0.0.1:8085:8000"
+    volumes:
+      - workboard_data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+volumes:
+  workboard_data:
