@@ -10,7 +10,7 @@ A small local document workspace used to demonstrate one AppSec finding from man
 2. [F-01: cross-tenant document modification](findings/F-01-BOLA-document-update.md), including the sanitized request and response.
 3. The baseline implementation of `update_doc` in the initial lab-source commit.
 4. The regression-test commit and the remediation commit in the F-01 pull request.
-5. The associated GitHub Actions runs. The pre-fix regression is expected to fail; the fixed code is expected to pass. Only completed runs establish the actual result.
+5. [Actual CI results](docs/ci-evidence.md): the pre-fix regression produced **2 failed, 14 passed**; the fixed code produced **16 passed**. See [pull request #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) for the commit sequence.
 
 ## Run locally
 
@@ -42,7 +42,7 @@ python -m pytest tests/ -q
 
 Tests run the FastAPI application through `TestClient` with a temporary SQLite database; a running Docker instance or Burp is not required.
 
-The `Tests` workflow runs on pull requests targeting `main` and pushes to `main`. Running CI and enforcing required merge checks are separate settings; merge enforcement must be verified for the repository and account plan.
+The `Tests` workflow runs on pull requests targeting `main` and pushes to `main`. GitHub's current account plan does not support protected branches in this private repository, so required-check enforcement is not enabled. CI results remain visible in the pull request; the remediation was validated before merging.
 
 ## Scope
 

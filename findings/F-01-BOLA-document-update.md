@@ -1,6 +1,6 @@
 # F-01: Cross-tenant document modification (BOLA)
 
-**Status:** Fixed in source; post-fix CI and manual HTTP retest pending  
+**Status:** Fixed; 16 tests passed in GitHub Actions; manual post-fix HTTP retest pending  
 **Origin:** Seeded local AppSec training vulnerability  
 **Endpoint:** `PATCH /api/docs/{doc_id}`  
 **Classification:** OWASP API1:2023 — Broken Object Level Authorization  
@@ -52,4 +52,13 @@ In `app/main.py`, `update_doc` checks the role and loads the document by ID, the
 
 ## Verification
 
-Added eight regression cases for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. [Pre-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939343951) confirmed **2 failed, 14 passed**; both failures were unauthorized cross-tenant updates. Post-fix CI is pending. See [PR #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) and the [replay guide](../docs/interview-demo.md). Repeat the original Burp request against the rebuilt local app after remediation; this manual post-fix HTTP retest is still pending.
+Added eight regression cases for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. [Pre-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939343951) confirmed **2 failed, 14 passed**; both failures were unauthorized cross-tenant updates. [Post-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939617719) confirmed **16 passed** on [fix commit `066e3af`](https://github.com/Skrakee/workboard-appsec-portfolio/commit/066e3affecfbf7bbb12909d6ff090858271403ac). See [PR #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) and the [replay guide](../docs/interview-demo.md). Repeat the original Burp request against the rebuilt local app after remediation; this manual post-fix HTTP retest is still pending.
+
+## Review history
+
+- [Vulnerable baseline](https://github.com/Skrakee/workboard-appsec-portfolio/commit/78867096b84b577a8f471fafe32211eaf56b47bf).
+- [Regression tests before remediation](https://github.com/Skrakee/workboard-appsec-portfolio/commit/092c9b5c63814497720dc6594c2e13ec71b0c0aa).
+- [Tenant-isolation fix](https://github.com/Skrakee/workboard-appsec-portfolio/commit/066e3affecfbf7bbb12909d6ff090858271403ac).
+- [Pull request #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1), including the actual CI run links.
+
+The commit sequence was reconstructed from preserved pre-fix source for this educational demonstration. Required-check enforcement is unavailable on this private repository's current GitHub plan; successful CI is recorded separately from merge-gate enforcement.
