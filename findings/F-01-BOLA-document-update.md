@@ -1,6 +1,6 @@
 # F-01: Cross-tenant document modification (BOLA)
 
-**Status:** Verified; vulnerable implementation retained in the baseline commit  
+**Status:** Fixed in source; post-fix CI and manual HTTP retest pending  
 **Origin:** Seeded local AppSec training vulnerability  
 **Endpoint:** `PATCH /api/docs/{doc_id}`  
 **Classification:** OWASP API1:2023 — Broken Object Level Authorization  
@@ -48,8 +48,8 @@ These HTTP exchanges were captured manually by the project owner on 2026-11-21. 
 
 ## Root cause and remediation
 
-In `app/main.py`, `update_doc` checks the role and loads the document by ID, then updates it without comparing the two organization IDs. The remediation must compare `doc["org_id"]` with `user["org_id"]` before any write and reject mismatches with `404 Document not found`, consistent with the cross-tenant comments policy.
+In `app/main.py`, `update_doc` checks the role and loads the document by ID, then updates it without comparing the two organization IDs. The remediation compares `doc["org_id"]` with `user["org_id"]` before any write and rejects mismatches with `404 Document not found`, consistent with the cross-tenant comments policy.
 
 ## Verification
 
-Add tests for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. Record actual pre-fix and post-fix CI results in the pull request. Repeat the original Burp request against the rebuilt local app after remediation; this manual post-fix HTTP retest is still pending.
+Added eight regression cases for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. [Pre-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939343951) confirmed **2 failed, 14 passed**; both failures were unauthorized cross-tenant updates. Post-fix CI is pending. See [PR #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) and the [replay guide](../docs/interview-demo.md). Repeat the original Burp request against the rebuilt local app after remediation; this manual post-fix HTTP retest is still pending.
