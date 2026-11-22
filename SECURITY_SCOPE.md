@@ -1,12 +1,11 @@
-# Security scope and disclosure
+# Scope and provenance
 
-**This is intentionally vulnerable software for an isolated AppSec portfolio exercise.**
-Some weaknesses were **seeded intentionally** by the project author. They are not vulnerabilities discovered in an unrelated upstream application. Never portray seeded findings as independent discoveries.
+## Scope
 
-Run only on your own machine. Docker Compose binds the HTTP port to `127.0.0.1:8085`; do not change the binding to a public interface or deploy to the Internet. Use only synthetic demo data. Do not add real credentials, real customer information, or production services.
+Workboard is an intentionally vulnerable educational lab. F-01 covers document editing across Atlas and Boreal; other weaknesses remain outside this fix. Passing the regression suite does not establish that all endpoints are secure.
 
-Run active DAST and proof-of-concept attacks **only** against the local instance (`http://127.0.0.1:8085`), never against arbitrary public hosts. Treat the app as untrusted code; Docker is not a perfect security boundary. Review dependency downloads and image contents prior to first build.
+Run the app and any active scans only against the local instance at `http://127.0.0.1:8085`. Keep the loopback port binding, use synthetic data, and do not deploy this lab publicly. Demo passwords and `APP_SECRET` are development-only values.
 
-Vulnerability categories are intentionally not enumerated here to preserve a blind-testing component. Document each confirmed seeded finding with `Origin: seeded` in your final report. No finding is verified until it has a reproducible PoC.
+## Provenance
 
-The demo passwords and `APP_SECRET` are intentionally development-only. Do not reuse them anywhere.
+The application includes seeded weaknesses. The original F-01 proof of concept and post-fix retest were performed manually with Burp Suite. The demonstration commit sequence was reconstructed from a preserved vulnerable source snapshot; it is not the original development timeline.
