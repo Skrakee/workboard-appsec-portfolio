@@ -9,7 +9,6 @@ A local FastAPI/SQLite document workspace demonstrating a cross-tenant authoriza
 | [Security design](docs/security-design.md) | System context, authorization policy and threat |
 | [F-01 finding](findings/F-01-BOLA-document-update.md) | Impact, root cause and fix |
 | [F-01 evidence](findings/evidence/F-01/README.md) | Before/after HTTP captures and CI results |
-| [Reproduction guide](docs/interview-demo.md) | Run the vulnerable and fixed versions |
 | [Remediation PR](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) | Review the test and fix commits |
 
 This is an educational lab with intentionally seeded weaknesses. See [scope and provenance](SECURITY_SCOPE.md).

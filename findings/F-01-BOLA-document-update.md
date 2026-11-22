@@ -28,4 +28,4 @@ The `update_doc` route in [app/main.py](../app/main.py) checked the administrato
 
 The new regression tests failed before remediation and passed afterward. A manual retest on 2026-11-22 confirmed the Atlas-to-Boreal PATCH was rejected with `404`; the document retained its original title and content.
 
-The [evidence index](evidence/F-01/README.md) separates manual observations from automated coverage. See the [reproduction guide](../docs/interview-demo.md) to repeat the tests.
+The [evidence index](evidence/F-01/README.md) separates manual observations from automated coverage.

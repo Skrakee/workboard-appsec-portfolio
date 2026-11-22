@@ -25,4 +25,4 @@ The two failures were cross-tenant administrator edits in opposite directions. T
 
 The manual retest covers Atlas-to-Boreal denial and unchanged content. Same-tenant success and reverse-direction denial are covered by automation; no additional manual result is claimed.
 
-[Finding](../../F-01-BOLA-document-update.md) · [Reproduce](../../../docs/interview-demo.md)
+[Finding](../../F-01-BOLA-document-update.md)
