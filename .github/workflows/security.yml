@@ -23,16 +23,13 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install Semgrep CE
-        run: python -m pip install semgrep==1.145.0
       - name: Scan application source
         run: |
           mkdir -p reports
-          semgrep --version > reports/semgrep-version.txt
-          semgrep scan --config security/semgrep.yml --metrics=off --disable-version-check --strict --json --output reports/semgrep.json app
+          image=semgrep/semgrep:1.145.0
+          docker run --rm "$image" semgrep --version > reports/semgrep-version.txt
+          docker run --rm -v "$PWD:/src" --workdir /src "$image" semgrep scan --config security/semgrep.yml --metrics=off --disable-version-check --strict --json --output reports/semgrep.json app
+          docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/semgrep-image.txt
           jq -e '.errors | length == 0' reports/semgrep.json
           count=$(jq '.results | length' reports/semgrep.json)
           echo "SAST: $count review candidates (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
