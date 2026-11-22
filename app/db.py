@@ -1,4 +1,4 @@
-"""Small, local-only SQLite data model for the AppSec portfolio exercise."""
+"""SQLite storage and synthetic workspace data."""
 import hashlib
 import os
 import secrets

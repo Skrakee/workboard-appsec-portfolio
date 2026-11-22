@@ -1,4 +1,4 @@
-"""Workboard: a small, deliberately imperfect local AppSec training application.
+"""Workboard document, identity and comment API.
 
 SECURITY NOTE: Contains intentional vulnerabilities for controlled, local testing.
 See SECURITY_SCOPE.md. Never expose this app to the Internet.
@@ -26,7 +26,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="Workboard AppSec Portfolio Lab", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Workboard", version="0.1.0", lifespan=lifespan)
 
 class LoginRequest(BaseModel):
     email: str

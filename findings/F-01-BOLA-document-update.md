@@ -7,6 +7,8 @@
 | Classification | BOLA — OWASP API1:2023 |
 | Severity | High (provisional; cross-tenant integrity impact) |
 | Origin | Seeded educational lab |
+| Threat scenario | [TM-03](../docs/threat-model.md) |
+| Requirements | [SR-02, SR-03, SR-04](../docs/security-requirements.md) |
 
 ## Finding
 

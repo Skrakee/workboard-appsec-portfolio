@@ -1,0 +1,174 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: SAST (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Scan application source
+        run: |
+          mkdir -p reports
+          image=semgrep/semgrep:1.145.0
+          docker run --rm "$image" semgrep --version > reports/semgrep-version.txt
+          docker run --rm -v "$PWD:/src" --workdir /src "$image" semgrep scan --config security/semgrep.yml --metrics=off --disable-version-check --strict --json --output reports/semgrep.json app
+          docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/semgrep-image.txt
+          jq -e '.errors | length == 0' reports/semgrep.json
+          count=$(jq '.results | length' reports/semgrep.json)
+          echo "SAST: $count review candidates (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          jq -r '.results[] | "\(.check_id): \(.path):\(.start.line) — \(.extra.message)"' reports/semgrep.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-report
+          path: reports/
+          retention-days: 30
+
+  sca:
+    name: SCA (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pip-audit
+        run: python -m pip install pip-audit==2.9.0
+      - name: Audit runtime dependencies
+        run: |
+          mkdir -p reports
+          pip-audit --version > reports/pip-audit-version.txt
+          set +e
+          pip-audit -r requirements.txt --progress-spinner off --format json --output reports/pip-audit.json
+          scan_status=$?
+          set -e
+          jq -e '.dependencies | type == "array" and length > 0' reports/pip-audit.json
+          jq -e '[.dependencies[] | select(.skip_reason != null)] | length == 0' reports/pip-audit.json
+          count=$(jq '[.dependencies[].vulns[]] | length' reports/pip-audit.json)
+          if [ "$count" -eq 0 ]; then
+            test "$scan_status" -eq 0
+          else
+            test "$scan_status" -eq 1
+          fi
+          echo "SCA: $count package advisories (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          jq -r '.dependencies[] as $d | $d.vulns[] | "\($d.name)==\($d.version): \(.id), fixes: \(.fix_versions | join(", "))"' reports/pip-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca-report
+          path: reports/
+          retention-days: 30
+
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan fetched Git history
+        run: |
+          mkdir -p reports
+          image=ghcr.io/gitleaks/gitleaks:v8.24.2
+          docker run --rm "$image" version > reports/gitleaks-version.txt
+          set +e
+          docker run --rm -v "$PWD:/repo:ro" -v "$RUNNER_TEMP:/output" "$image" git /repo --log-opts="--all" --config /repo/.gitleaks.toml --redact --report-format json --report-path /output/gitleaks.json
+          scan_status=$?
+          set -e
+          jq 'map(.Secret = "[REDACTED]" | .Match = "[REDACTED]")' "$RUNNER_TEMP/gitleaks.json" > reports/gitleaks.json
+          count=$(jq 'length' reports/gitleaks.json)
+          echo "Secrets: $count detections (blocking)" | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$scan_status" -eq 0
+          test "$count" -eq 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secrets-report
+          path: reports/
+          retention-days: 30
+
+  dast:
+    name: DAST (passive, report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build and start disposable application
+        run: |
+          docker compose up --build -d workboard
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8085/api/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs workboard
+          exit 1
+      - name: Passive OpenAPI scan as Atlas admin
+        id: scan
+        run: |
+          mkdir -p reports
+          chmod 777 reports
+          token=$(curl --fail --silent http://127.0.0.1:8085/api/auth/login -H 'Content-Type: application/json' --data '{"email":"admin@atlas.test","password":"AtlasAdmin123!"}' | jq -er '.access_token')
+          echo "::add-mask::$token"
+          export ZAP_AUTH_HEADER_VALUE="Bearer $token"
+          export ZAP_AUTH_HEADER_SITE=127.0.0.1
+          curl --fail --silent http://127.0.0.1:8085/api/me -H "Authorization: $ZAP_AUTH_HEADER_VALUE" | jq -e '.org_id == 1 and .role == "admin"'
+          image=ghcr.io/zaproxy/zaproxy:stable
+          set +e
+          docker run --rm --network host -e ZAP_AUTH_HEADER_VALUE -e ZAP_AUTH_HEADER_SITE -v "$PWD/reports:/zap/wrk:rw" "$image" zap-api-scan.py -t http://127.0.0.1:8085/openapi.json -f openapi -S -T 5 -J zap.json -r zap.html
+          scan_status=$?
+          set -e
+          sudo chown -R "$(id -u):$(id -g)" reports
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          bearer = os.environ["ZAP_AUTH_HEADER_VALUE"]
+          token = bearer.removeprefix("Bearer ")
+          for path in Path("reports").glob("*"):
+              if path.is_file():
+                  text = path.read_text(encoding="utf-8")
+                  path.write_text(text.replace(bearer, "Bearer <ATLAS_ADMIN_TOKEN>").replace(token, "<ATLAS_ADMIN_TOKEN>"), encoding="utf-8")
+          PY
+          case "$scan_status" in
+            0|1|2) ;;
+            *) exit "$scan_status" ;;
+          esac
+          jq -e '.site | type == "array" and length > 0' reports/zap.json
+          count=$(jq '[.site[].alerts[]] | length' reports/zap.json)
+          echo "DAST: $count passive alert groups (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          jq -r '.site[].alerts[] | "\(.pluginid): \(.name), risk: \(.riskdesc)"' reports/zap.json
+          docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/zap-image.txt
+      - uses: actions/upload-artifact@v4
+        if: success() && steps.scan.outcome == 'success'
+        with:
+          name: dast-report
+          path: reports/
+          retention-days: 30
+      - name: Stop disposable application
+        if: always()
+        run: docker compose down --volumes

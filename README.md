@@ -1,27 +1,20 @@
-# Workboard AppSec Portfolio
+# Workboard
 
-A local FastAPI/SQLite document workspace demonstrating a cross-tenant authorization flaw: reproduction, regression tests, remediation and manual retesting.
+A document workspace for teams. Users sign in to their organization's workspace, find documents and discuss them through comments. Administrators can edit document titles and content.
 
-## Start here
+Workboard uses FastAPI, SQLite and a browser interface built with HTML, CSS and JavaScript. Atlas and Boreal provide sample organizations, each with an administrator and a member.
 
-| Document | Purpose |
-| --- | --- |
-| [Security design](docs/security-design.md) | System context, authorization policy and threat |
-| [F-01 finding](findings/F-01-BOLA-document-update.md) | Impact, root cause and fix |
-| [F-01 evidence](findings/evidence/F-01/README.md) | Before/after HTTP captures and CI results |
-| [Remediation PR](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) | Review the test and fix commits |
+This repository is a local security engineering lab with intentionally seeded weaknesses. Assessment and remediation are ongoing; see [scope and provenance](SECURITY_SCOPE.md).
 
-This is an educational lab with intentionally seeded weaknesses. See [scope and provenance](SECURITY_SCOPE.md).
+## Run the application
 
-## Run locally
-
-From the repository directory:
+Prerequisite: Docker Desktop with Docker Compose. From the repository directory:
 
 ```bash
 docker compose up --build -d workboard
 ```
 
-Open `http://127.0.0.1:8085`. After changing application code, run the same command to rebuild and replace the container.
+Open [the workspace](http://127.0.0.1:8085) or [the API reference](http://127.0.0.1:8085/docs).
 
 | Organization | Role | Email | Demo password |
 | --- | --- | --- | --- |
@@ -30,15 +23,34 @@ Open `http://127.0.0.1:8085`. After changing application code, run the same comm
 | Boreal | admin | admin@boreal.test | BorealAdmin123! |
 | Boreal | member | member@boreal.test | BorealMember123! |
 
-Atlas documents: `101`, `102`. Boreal documents: `201`, `202`.
+Atlas documents are `101` and `102`; Boreal documents are `201` and `202`.
 
-## Run tests
+The database persists in the `workboard_data` volume. Rebuilding the application keeps existing data. To update a checkout, switch to the intended branch, pull its changes and run the same Compose command. Compose rebuilds the image and replaces its service container when needed.
 
-With Python 3.12 in an activated virtual environment:
+Use `docker compose logs --tail 100 workboard` for startup problems and `docker compose down` to stop the application. If port 8085 is occupied, stop the unrelated container using that port.
+
+## Development and tests
+
+With Python 3.12 and an activated virtual environment:
 
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest tests/ -q
 ```
 
-Tests use FastAPI `TestClient` and isolated temporary databases. CI runs on pull requests targeting `main` and pushes to `main`; required-check enforcement is unavailable on the current private-repository plan.
+Tests create isolated temporary databases; they do not modify the running Docker workspace. See [contributing](CONTRIBUTING.md) for change and remediation workflows.
+
+## Repository guide
+
+| Area | Purpose |
+| --- | --- |
+| [Application](app/) | API, database setup and browser interface |
+| [Architecture](docs/architecture.md) | Components, data flows, API surface and trust boundaries |
+| [Security requirements](docs/security-requirements.md) | Intended authorization and security behavior |
+| [Threat model](docs/threat-model.md) | Attack scenarios and required controls |
+| [Security testing](docs/security-testing.md) | Current coverage and investigation queue |
+| [Findings](findings/README.md) | Validated issues, remediation status and evidence |
+| [Security checks](docs/security-checks.md) | CI tools, reports and scan policy |
+| [Tests](tests/) | Functional checks and security regressions |
+
+The [Tests](.github/workflows/tests.yml) and [Security](.github/workflows/security.yml) workflows run on pull requests to `main` and pushes to `main`. Passing CI is one input to review; assessment coverage is tracked separately.
