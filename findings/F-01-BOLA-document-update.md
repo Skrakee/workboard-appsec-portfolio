@@ -1,6 +1,6 @@
 # F-01: Cross-tenant document modification (BOLA)
 
-**Status:** Fixed; 16 tests passed in GitHub Actions; manual post-fix HTTP retest pending  
+**Status:** Fixed; 16 tests passed in GitHub Actions; manual Atlas-to-Boreal rejection verified on 2026-11-22  
 **Origin:** Seeded local AppSec training vulnerability  
 **Endpoint:** `PATCH /api/docs/{doc_id}`  
 **Classification:** OWASP API1:2023 — Broken Object Level Authorization  
@@ -52,7 +52,11 @@ In `app/main.py`, `update_doc` checks the role and loads the document by ID, the
 
 ## Verification
 
-Added eight regression cases for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. [Pre-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939343951) confirmed **2 failed, 14 passed**; both failures were unauthorized cross-tenant updates. [Post-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939617719) confirmed **16 passed** on [fix commit `066e3af`](https://github.com/Skrakee/workboard-appsec-portfolio/commit/066e3affecfbf7bbb12909d6ff090858271403ac). See [PR #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) and the [replay guide](../docs/interview-demo.md). Repeat the original Burp request against the rebuilt local app after remediation; this manual post-fix HTTP retest is still pending.
+Added eight regression cases for cross-tenant rejection in both directions with unchanged stored data, successful same-tenant admin updates, member/unauthenticated denials, and missing documents. [Pre-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939343951) confirmed **2 failed, 14 passed**; both failures were unauthorized cross-tenant updates. [Post-fix CI](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/44939617719) confirmed **16 passed** on [fix commit `066e3af`](https://github.com/Skrakee/workboard-appsec-portfolio/commit/066e3affecfbf7bbb12909d6ff090858271403ac). See [PR #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) and the [replay guide](../docs/interview-demo.md). The project owner completed the manual Atlas-to-Boreal retest on 2026-11-22: the same token identified an Atlas administrator via `/api/me`, the cross-tenant PATCH returned `404 Document not found`, and the owner confirmed the document remained unchanged with a supporting screenshot. See the [sanitized manual retest evidence](evidence/F-01/manual-retest-2026-11-22.md). A separate manual same-tenant successful edit was not supplied; allowed edits are covered by the automated suite.
+
+## Manual retest evidence
+
+The [manual retest record](evidence/F-01/manual-retest-2026-11-22.md) contains sanitized requests and responses, capture timestamps, recorded checkout context, screenshot observations and explicit coverage limits. Bearer tokens are redacted.
 
 ## Review history
 

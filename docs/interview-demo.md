@@ -30,13 +30,14 @@ python -m pytest tests/ -q
 
 Expected: **2 failed, 14 passed**. The failing cases receive success for cross-tenant updates and observe modified stored data.
 
-After the remediation PR is merged, switch back to the fixed main branch:
+Check out the fixed commit to reproduce the post-fix result, including before the PR is merged:
 
 ```bash
-git switch main
-git pull --ff-only
+git switch --detach 066e3affecfbf7bbb12909d6ff090858271403ac
 python -m pytest tests/ -q
 ```
+
+After the remediation PR is merged, `git switch main` followed by `git pull --ff-only` returns to the updated main branch.
 
 Expected: **16 passed**. Before/after assertions also verify that denied edits leave the document unchanged.
 
@@ -46,4 +47,8 @@ Each test creates a temporary SQLite database. The tests do not require a runnin
 
 The workflow runs automatically on pull requests targeting main and pushes to main. Required-check enforcement is not enabled: GitHub returned a plan restriction for protected branches in this private repository. A passing CI run and an enforced merge gate are different things.
 
-Manual post-fix Burp verification remains a separate task: rebuild the local app, repeat the captured Atlas-to-Boreal PATCH with a fresh token, expect 404, and confirm the victim document is unchanged.
+## Manual post-fix evidence
+
+The project owner performed the Atlas-to-Boreal retest on 2026-11-22. Read the [sanitized retest record](../findings/evidence/F-01/manual-retest-2026-11-22.md): `/api/me` identifies the Atlas administrator, the PATCH to document 201 returns 404, and the supplied screenshot plus the owner's observation support unchanged victim data. A separate manual successful same-tenant edit was not supplied.
+
+To repeat the retest, check out the desired fixed revision, run `docker compose up --build -d workboard` from that checkout, obtain a fresh Atlas administrator token, repeat the captured PATCH and inspect the Boreal document after reloading it. Also verify that an administrator can still edit a document within their own tenant.

@@ -12,6 +12,8 @@ A small local document workspace used to demonstrate one AppSec finding from man
 4. The regression-test commit and the remediation commit in the F-01 pull request.
 5. [Actual CI results](docs/ci-evidence.md): the pre-fix regression produced **2 failed, 14 passed**; the fixed code produced **16 passed**. See [pull request #1](https://github.com/Skrakee/workboard-appsec-portfolio/pull/1) for the commit sequence.
 
+6. [Manual post-fix verification](findings/evidence/F-01/manual-retest-2026-11-22.md): owner-supplied identity evidence, rejected cross-tenant edit and unchanged document observation on 2026-11-22. The record states the limits of the supplied manual evidence.
+
 ## Run locally
 
 The app contains additional intentional weaknesses. Use synthetic data and a local-only instance. Read [SECURITY_SCOPE.md](SECURITY_SCOPE.md).
