@@ -1,4 +1,4 @@
-"""Regression coverage for F-01: tenant isolation when editing documents."""
+"""Document update authorization: tenant, role and rejected-write behavior."""
 
 import pytest
 
