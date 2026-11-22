@@ -1,6 +1,6 @@
-# Security design: document editing
+# Security design
 
-Workboard is a local FastAPI/SQLite document workspace with two tenants, Atlas and Boreal. JWT authentication identifies a user; the API loads the user's role and organization from SQLite. Roles are `admin` and `member`.
+Workboard is a local FastAPI/SQLite document workspace with two tenants, Atlas and Boreal, and two roles: `admin` and `member`. JWT authentication identifies the user; the API loads the role and organization from SQLite.
 
 ## Authorization policy
 
@@ -10,12 +10,12 @@ Workboard is a local FastAPI/SQLite document workspace with two tenants, Atlas a
 | Read/add comments | Allow | Allow | Deny |
 | Edit title/content | Deny | Allow | Deny |
 
-This is the intended policy, not a claim that every existing endpoint enforces it. This portfolio finding fixes document editing only.
+This is the intended policy. F-01 verifies and fixes document editing.
 
 ## Threat and control
 
-The browser is untrusted: an attacker can change the document ID regardless of which buttons the UI displays. For an edit, the server must enforce both `role == admin` and `user.org_id == doc.org_id`, using server-side data.
+The browser is untrusted. Changing `/api/docs/101` to `/api/docs/201` must not let an Atlas administrator modify a Boreal document, regardless of which buttons the UI displays.
 
-The concrete threat is cross-tenant tampering: an Atlas administrator changes `/api/docs/101` to `/api/docs/201` and modifies a Boreal document. The vulnerable version enforces the role check only. The remediation rejects a tenant mismatch before the database update.
+The API must enforce both `role == admin` and `user.org_id == doc.org_id` before writing. The vulnerable route checked only the role; the fix rejects a tenant mismatch with `404 Document not found`.
 
-Tests cover the denial and unchanged database state, allowed updates in each tenant, member denials, unauthenticated requests and a missing document. Each test uses an isolated temporary database.
+See the [finding](../findings/F-01-BOLA-document-update.md), [evidence](../findings/evidence/F-01/README.md) and [regression tests](../tests/test_document_authorization.py).

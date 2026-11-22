@@ -122,6 +122,8 @@ def update_doc(doc_id: int, body: DocUpdate, user=Depends(current_user)):
         raise HTTPException(403, "Admin access required")
     with connect() as conn:
         doc = get_doc(conn, doc_id)
+        if doc["org_id"] != user["org_id"]:
+            raise HTTPException(404, "Document not found")
         new_title = body.title if body.title is not None else doc["title"]
         new_content = body.content if body.content is not None else doc["content"]
         conn.execute("UPDATE docs SET title=?, content=? WHERE id=?", (new_title, new_content, doc_id))

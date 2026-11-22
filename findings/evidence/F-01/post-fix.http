@@ -1,0 +1,30 @@
+# F-01 — manual retest after remediation, 2026-11-22
+# Target: http://127.0.0.1:8085
+# Bearer token redacted; unrelated headers and Content-Length omitted.
+
+### Confirm Atlas administrator identity
+GET /api/me HTTP/1.1
+Host: 127.0.0.1:8085
+Authorization: Bearer <ATLAS_ADMIN_TOKEN>
+
+HTTP/1.1 200 OK
+date: Sun, 22 Nov 2026 08:40:56 GMT
+server: uvicorn
+content-type: application/json
+
+{"id":1,"email":"admin@atlas.test","org_id":1,"role":"admin"}
+
+### Attempt to update Boreal document 201 with the same token
+PATCH /api/docs/201 HTTP/1.1
+Host: 127.0.0.1:8085
+Authorization: Bearer <ATLAS_ADMIN_TOKEN>
+Content-Type: application/json
+
+{"title":"check","content":"BOLA check"}
+
+HTTP/1.1 404 Not Found
+date: Sun, 22 Nov 2026 08:41:27 GMT
+server: uvicorn
+content-type: application/json
+
+{"detail":"Document not found"}
