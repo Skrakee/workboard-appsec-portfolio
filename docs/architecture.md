@@ -10,16 +10,9 @@ Workboard has three main parts:
 
 ## Data flow
 
-```mermaid
-flowchart TD
-    Browser["Browser"]
-    Server["FastAPI server"]
-    Database[("SQLite database")]
-    Browser -->|"Login details and API requests"| Server
-    Server -->|"Sign-in token, documents and comments"| Browser
-    Server -->|"Read and save data"| Database
-    Database -->|"Accounts and stored content"| Server
-```
+![Workboard data flow](diagrams/workboard-data-flow.svg)
+
+[Editable draw.io file](diagrams/workboard-data-flow.drawio)
 
 The server and database run in one Docker container. The database is a file saved in a Docker volume. Atlas and Boreal share that database.
 
