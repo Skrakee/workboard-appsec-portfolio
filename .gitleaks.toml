@@ -1,0 +1,12 @@
+title = "Workboard educational lab"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Exact synthetic development JWT secrets; never production credentials"
+regexTarget = "secret"
+regexes = [
+  '^local-only-example-secret-do-not-use-in-production-2026$',
+  '^local-only-training-secret-change-before-deploying-2026$',
+]

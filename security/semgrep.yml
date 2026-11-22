@@ -1,0 +1,21 @@
+rules:
+  - id: interpolated-sql-execute
+    languages: [python]
+    severity: ERROR
+    message: Interpolated SQL reaches execute. Check input provenance and use bound parameters.
+    metadata:
+      cwe: CWE-89
+    pattern-either:
+      - pattern: $CONN.execute(f"...")
+      - patterns:
+          - pattern: $CONN.execute($SQL)
+          - pattern-inside: |
+              $SQL = f"..."
+              ...
+  - id: html-assignment
+    languages: [javascript]
+    severity: WARNING
+    message: Review innerHTML input for stored XSS. Prefer textContent for untrusted text.
+    metadata:
+      cwe: CWE-79
+    pattern: $ELEMENT.innerHTML = $VALUE
