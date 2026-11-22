@@ -1,36 +1,22 @@
-# F-NN: Descriptive issue title
+# Finding number: Short title
 
-<!-- Copy for a validated issue. Replace placeholders; do not invent missing results.
-Store captures under evidence/F-NN/ and replace live credentials/tokens with placeholders. -->
+**Status:** Confirmed / Being fixed / Needs retest / Fixed.
+**Severity:** Add a rating and a short reason.
 
-| Field | Value |
-| --- | --- |
-| State | Confirmed / In remediation / Awaiting retest / Verified fixed |
-| Affected version | Commit and local environment |
-| Surface | Route, method or browser flow |
-| Threat / requirement | TM-NN / SR-NN |
-| Severity | Rating with impact and precondition rationale; provisional if needed |
-| Classification | Relevant weakness/category |
+## The problem
 
-## Issue and impact
+Who can do something they should not be allowed to do? What data or action is affected?
 
-Describe the policy violation, affected data/accounts and demonstrated consequence.
+## Before the fix
 
-## Reproduction
+Give the tested version, account, request or browser steps, and actual result. Hide live passwords and tokens.
 
-State the actor, target and baseline. Give the minimal steps or sanitized request, expected behavior and observed result. Link the evidence and record whether persistence or browser execution was verified.
+## The fix
 
-## Root cause and remediation
+Explain the code change and link its commit or pull request.
 
-Identify the code path and missing control. Link the fix commit/PR when one exists.
+## After the fix
 
-## Verification
+Record the version tested, the new result and whether stored data stayed correct. Link the automated test if one was added.
 
-| Check | Tested commit | Actual result and evidence |
-| --- | --- | --- |
-| Before-fix reproduction/regression | Not recorded | Not recorded |
-| After-fix regression | Not recorded | Not recorded |
-| Manual retest, including stored effect | Not recorded | Not recorded |
-| Allowed-use behavior | Not recorded | Not recorded |
-
-Record only checks performed. State coverage limits and remaining work before marking the issue verified fixed.
+Write "Not tested yet" for checks that have not been done. Only mark the finding fixed after checking the result.

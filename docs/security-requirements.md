@@ -1,35 +1,31 @@
-# Security requirements
+# Security rules
 
-These requirements describe intended Workboard behavior. They are acceptance criteria for implementation and assessment, not a declaration that the current application meets every requirement.
+These are the rules Workboard should follow. Some still need to be tested or fixed.
 
-## Authorization policy
+## Who can do what?
 
-| Operation | Unauthenticated | Same-tenant member | Same-tenant admin | Other-tenant account |
-| --- | --- | --- | --- | --- |
-| List/search documents | Deny | Allow | Allow | No other-tenant results |
-| Read a document | Deny | Allow | Allow | Deny |
-| Read/add comments | Deny | Allow | Allow | Deny |
-| Edit document title/content | Deny | Deny | Allow | Deny |
+| Action | Member in the same organization | Admin in the same organization | User from another organization |
+| --- | --- | --- | --- |
+| Read or search documents | Allow | Allow | Deny access to the other organization's documents |
+| Read or add comments | Allow | Allow | Deny |
+| Edit document title and content | Deny | Allow | Deny |
 
-Login, static assets, health and API documentation are public. An admin's authority ends at the organization's boundary. Both roles may comment; neither role should read another organization's private documents.
+Users must sign in before using these actions. Login, the home page, the health check and the API documentation are public.
 
-For editing, missing authentication returns 401; an authenticated member receives 403; an administrator requesting a missing or other-tenant document receives 404. A rejected write must not change stored data. The policy above applies to both organizations; the [coverage register](security-testing.md#coverage-register) records which combinations are tested.
+An admin's permissions apply only to their own organization. Sending a different document ID must not change that rule.
 
-## Acceptance criteria
+## Other rules
 
-| ID | Requirement | Verification approach |
-| --- | --- | --- |
-| SR-01 | Protected endpoints require a valid, unexpired signed JWT for an existing account. Role and organization are loaded server-side. Invalid credentials/tokens must not disclose another identity. | Missing, expired, modified and malformed tokens; unknown accounts; invalid passwords |
-| SR-02 | Document listing, search, individual reads, updates and comments enforce the caller's organization. Guessing an ID must not cross this boundary. | Repeat read/write operations across both tenants and roles |
-| SR-03 | Only an administrator may change document title or content within their own tenant. Request fields and UI state cannot grant that role. | Direct API calls as members/admins; role-tampering attempts |
-| SR-04 | Rejected writes preserve stored data. Valid writes persist the requested fields without altering tenant or ownership metadata. Missing objects are handled consistently. | Independent before/after database snapshots and response assertions |
-| SR-05 | Search input is treated as SQL data through parameter binding; malformed input cannot change query scope or SQL structure. | Code review plus search tests with quotes and SQL syntax |
-| SR-06 | Document and comment text is rendered as text. Any explicitly supported HTML must be sanitized against a defined policy. Stored input must not execute in another user's browser. | Source-to-DOM review and controlled browser verification |
-| SR-07 | Real credentials, JWTs and signing secrets are excluded from repository evidence and reports. Authentication artifacts are handled for their lifetime without exposing them in logs. | Secret scan, sanitized captures and session-handling review |
-| SR-08 | Input and resource use are bounded; repeated expensive requests must not exhaust the workspace service. | Boundary-value tests and controlled resource/rate-limit assessment |
-| SR-09 | Runtime dependency advisories are reviewed for affected versions and application relevance; updates preserve compatibility and regression behavior. | SCA triage and tested dependency changes |
-| SR-10 | Security-relevant actions can be attributed to an account, target, time and outcome without logging secrets. | Authentication/update/comment audit review |
+- The server must reject invalid or expired sign-in tokens.
+- The server must load the user's role and organization itself. It must not trust role or organization values sent by the browser.
+- A rejected edit must leave the saved document unchanged.
+- Search text must be passed as SQL data, not added directly to the SQL command.
+- Comments and document text must not run as JavaScript in another user's browser.
+- Real passwords and sign-in tokens must not appear in reports or Git history.
+- Input limits and request controls should keep one user from overloading the app.
+- Library security warnings need review, and updates need testing.
+- Logs should help identify who performed important actions without recording passwords or tokens.
 
-The local lab deliberately uses published synthetic credentials and development signing secrets. Their exception is documented in [scope](../SECURITY_SCOPE.md) and narrowly reflected in [.gitleaks.toml](../.gitleaks.toml); it is not a production secret-management design.
+For document edits, a missing sign-in token returns `401`. A member trying to edit receives `403`. An admin trying to edit a missing document or another organization's document receives `404`.
 
-Use the stable SR identifiers in [threat scenarios](threat-model.md), [test coverage](security-testing.md) and confirmed [findings](../findings/README.md). Record actual results in those assessment records rather than rewriting acceptance criteria to match current behavior.
+See the [threat model](threat-model.md) for the current testing status.

@@ -1,4 +1,4 @@
-name: Security
+name: Security checks
 
 on:
   push:
@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sast:
-    name: SAST (report only)
+  code:
+    name: Code scan (Semgrep)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -32,17 +32,17 @@ jobs:
           docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/semgrep-image.txt
           jq -e '.errors | length == 0' reports/semgrep.json
           count=$(jq '.results | length' reports/semgrep.json)
-          echo "SAST: $count review candidates (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Code scan: $count items to review (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
           jq -r '.results[] | "\(.check_id): \(.path):\(.start.line) — \(.extra.message)"' reports/semgrep.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sast-report
+          name: semgrep-report
           path: reports/
           retention-days: 30
 
-  sca:
-    name: SCA (report only)
+  dependencies:
+    name: Library scan (pip-audit)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -70,17 +70,17 @@ jobs:
           else
             test "$scan_status" -eq 1
           fi
-          echo "SCA: $count package advisories (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Library scan: $count warnings (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
           jq -r '.dependencies[] as $d | $d.vulns[] | "\($d.name)==\($d.version): \(.id), fixes: \(.fix_versions | join(", "))"' reports/pip-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sca-report
+          name: pip-audit-report
           path: reports/
           retention-days: 30
 
   secrets:
-    name: Secrets
+    name: Secret scan (Gitleaks)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -99,18 +99,18 @@ jobs:
           set -e
           jq 'map(.Secret = "[REDACTED]" | .Match = "[REDACTED]")' "$RUNNER_TEMP/gitleaks.json" > reports/gitleaks.json
           count=$(jq 'length' reports/gitleaks.json)
-          echo "Secrets: $count detections (blocking)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Secret scan: $count detections (blocking)" | tee -a "$GITHUB_STEP_SUMMARY"
           test "$scan_status" -eq 0
           test "$count" -eq 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: secrets-report
+          name: gitleaks-report
           path: reports/
           retention-days: 30
 
-  dast:
-    name: DAST (passive, report only)
+  web:
+    name: Web scan (ZAP, passive)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -160,13 +160,13 @@ jobs:
           esac
           jq -e '.site | type == "array" and length > 0' reports/zap.json
           count=$(jq '[.site[].alerts[]] | length' reports/zap.json)
-          echo "DAST: $count passive alert groups (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Web scan: $count passive alert groups (report only)" | tee -a "$GITHUB_STEP_SUMMARY"
           jq -r '.site[].alerts[] | "\(.pluginid): \(.name), risk: \(.riskdesc)"' reports/zap.json
           docker image inspect "$image" --format '{{index .RepoDigests 0}}' > reports/zap-image.txt
       - uses: actions/upload-artifact@v4
         if: success() && steps.scan.outcome == 'success'
         with:
-          name: dast-report
+          name: zap-report
           path: reports/
           retention-days: 30
       - name: Stop disposable application

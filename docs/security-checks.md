@@ -1,39 +1,56 @@
-# Security checks
+# Tests and security scans
 
-Workflows define executable commands. Their reports are generated during a run; installing a scanner locally is not required for GitHub CI.
+GitHub runs these checks on a temporary Linux computer. It downloads the project code, installs or starts the tools, runs them and saves their reports. Your own computer does not need to stay on.
 
-## Configuration and execution
+## What runs?
 
-| Check | Source of truth | Execution |
+| Check | What it does | Where it is set up |
 | --- | --- | --- |
-| Application tests | [tests/](../tests/), [tests.yml](../.github/workflows/tests.yml) | Python 3.12 installs development requirements and runs pytest against temporary databases |
-| SAST | [security.yml](../.github/workflows/security.yml), [Semgrep rules](../security/semgrep.yml) | A versioned Semgrep container scans Python/JavaScript under `app/` using two local review rules |
-| SCA | [security.yml](../.github/workflows/security.yml), [runtime requirements](../requirements.txt) | pip-audit resolves runtime/transitive Python dependencies and looks up known advisories |
-| Secrets | [security.yml](../.github/workflows/security.yml), [.gitleaks.toml](../.gitleaks.toml) | Gitleaks scans fetched Git history; only two exact synthetic signing-secret values are allowlisted |
-| DAST | [security.yml](../.github/workflows/security.yml), [compose.yaml](../compose.yaml) | Start a disposable Workboard container, authenticate as Atlas admin and run a passive ZAP OpenAPI scan |
+| App tests | Uses pytest to check login, documents, comments and edit permissions | [tests.yml](../.github/workflows/tests.yml) and [tests/](../tests/) |
+| Code scan: Semgrep | Looks for two code patterns: SQL built from text, and assignment to `innerHTML` | [security.yml](../.github/workflows/security.yml) and [semgrep.yml](../security/semgrep.yml) |
+| Library scan: pip-audit | Checks the app's Python libraries for known security problems | [security.yml](../.github/workflows/security.yml) and [requirements.txt](../requirements.txt) |
+| Secret scan: Gitleaks | Checks current and old Git commits for exposed secrets | [security.yml](../.github/workflows/security.yml) and [.gitleaks.toml](../.gitleaks.toml) |
+| Web scan: ZAP | Sends requests to a running copy of Workboard and checks the responses | [security.yml](../.github/workflows/security.yml) |
 
-Each job uses a temporary `ubuntu-latest` runner. Checkout supplies the proposed source. Docker images provide Semgrep, Gitleaks and ZAP; pip installs pip-audit. The workflow uploads reports with `actions/upload-artifact` and removes the disposable DAST application afterward.
+Semgrep, Gitleaks and ZAP run in Docker containers that contain the tools. The workflow installs pip-audit with `pip`.
 
-Tests and Security run on PRs targeting `main` and pushes to `main`. Security also supports manual dispatch. Once the workflow is on the default branch, use **Actions → Security → Run workflow**, selecting the intended ref. This currently runs all four security jobs.
+For ZAP, GitHub also builds and starts Workboard, signs in as an Atlas admin and gives ZAP the sign-in token. This is a passive scan: it does not run active attack tests or test the page as a real browser.
 
-## Policy
+App tests use a new temporary database for each test. They do not change your local Docker database. The [threat model](threat-model.md) lists checks that still need work.
 
-Failed tests and detected non-allowlisted secrets fail their checks. SAST/SCA/DAST findings are **report only** while assessment of the seeded lab continues; scanner/startup errors and incomplete results still fail. Green means successful execution, not zero vulnerabilities or completed risk review.
+## Where are the results?
 
-## Read a run
+Open **Actions**, select **Security checks**, then choose a run.
 
-1. Open **Actions → Security → run** or follow a PR's **Checks**.
-2. Select a job and expand its scan step for commands, errors, rule/advisory IDs and file locations.
-3. Read the run summary for counts. Download **Artifacts**: `sast-report`, `sca-report`, `secrets-report`, `dast-report`. Open `zap.html` for the readable DAST report.
+- Click a job and expand its scan step to read the output or an error.
+- Read the summary for the number of warnings.
+- Download the reports under **Artifacts**: `semgrep-report`, `pip-audit-report`, `gitleaks-report` and `zap-report`.
+- Open `zap.html` from the ZAP report in a browser.
 
-A missing executable, invalid configuration or timeout is an execution failure. A source location, package advisory or HTTP alert is assessment evidence requiring triage. Record review outcomes in [security/reviews](../security/reviews/); promote validated issues to [findings](../findings/README.md).
+The reports stay available for 30 days. Tokens are hidden before reports are uploaded.
 
-Reports retain tool versions and container digests where applicable. ZAP tokens and secret matches are redacted before upload. Artifacts expire after 30 days; commit a concise review summary when preserving an assessment milestone. The [2026-11-22 review](../security/reviews/2026-11-22.md) preserves the initial observed results.
+Tests and scans run when a pull request to `main` is opened or updated, and after a push to `main`. Once the workflow is merged, **Run workflow** also starts the four scans manually.
 
-## Coverage limits
+## What does a green check mean?
 
-The two SAST rules are narrow. SCA reports package advisories, not demonstrated application exploitability. ZAP safe mode runs no active attacks, uses one account and does not execute the interface as a browser. Browser and multi-account authorization testing remain in the [assessment plan](security-testing.md).
+A failed app test or an unexpected secret makes its job fail. For Semgrep, pip-audit and ZAP, findings are currently reported without failing the job. Tool errors still fail.
 
-Dependency resolution and advisory feeds can change between runs; transitives and the Docker base image are not fully locked. OS-package/image scanning and production deployment controls are not covered by this workflow.
+A green scan means the tool finished. It does not mean the app has no security problems.
 
-Tool references: [Semgrep](https://semgrep.dev/docs/cli-reference), [pip-audit](https://github.com/pypa/pip-audit), [Gitleaks](https://github.com/gitleaks/gitleaks), [ZAP](https://www.zaproxy.org/docs/docker/api-scan/).
+A message such as "command not found" is a tool setup problem. A file and line number, library warning or web alert is something to investigate.
+
+## Recorded results — 2026-11-22
+
+These results belong to [this code version](https://github.com/Skrakee/workboard-appsec-portfolio/commit/594cda0f9129d4412cb4643f443ae52ad81ea470).
+
+| Check | Result | Details |
+| --- | --- | --- |
+| App tests | 16 passed | [Test run](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/45031798624) |
+| Semgrep | 2 code warnings: search SQL and comment HTML | [Code scan](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/45031798716/job/137236793405) |
+| pip-audit | 24 library warnings across PyJWT 2.10.1 and Starlette 0.46.2 | [Library scan](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/45031798716/job/137236793052) |
+| Gitleaks | No secrets found, with the two sample signing-secret exceptions | [Secret scan](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/45031798716/job/137236793219) |
+| ZAP | 11 alert groups: 2 medium, 6 low and 3 informational | [Web scan](https://github.com/Skrakee/workboard-appsec-portfolio/actions/runs/45031798716/job/137236793275) |
+
+The library warnings still need review to see which affect Workboard. The web alerts include missing security headers and information about HTTP responses. A warning is not automatically a confirmed problem.
+
+These tools do not cover every threat. The two Semgrep rules are limited, and the ZAP scan uses one account. Browser tests, checks between different users and full Docker-image checks need separate work.
