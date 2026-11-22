@@ -1,56 +1,53 @@
 # Workboard
 
-A document workspace for teams. Users sign in to their organization's workspace, find documents and discuss them through comments. Administrators can edit document titles and content.
+Workboard is a small document-sharing app. Each user belongs to an organization. Members can read documents and add comments. Admins can also edit document titles and content.
 
-Workboard uses FastAPI, SQLite and a browser interface built with HTML, CSS and JavaScript. Atlas and Boreal provide sample organizations, each with an administrator and a member.
+The app uses FastAPI, SQLite, HTML, CSS and JavaScript. Atlas and Boreal are the two sample organizations.
 
-This repository is a local security engineering lab with intentionally seeded weaknesses. Assessment and remediation are ongoing; see [scope and provenance](SECURITY_SCOPE.md).
+This is a local security lab with known weaknesses. The work is to find, test and fix them. See [about this lab](SECURITY_SCOPE.md).
 
-## Run the application
+## Run the app
 
-Prerequisite: Docker Desktop with Docker Compose. From the repository directory:
+Install Docker Desktop, open a terminal in this repository and run:
 
 ```bash
 docker compose up --build -d workboard
 ```
 
-Open [the workspace](http://127.0.0.1:8085) or [the API reference](http://127.0.0.1:8085/docs).
+Open [Workboard](http://127.0.0.1:8085). The [API page](http://127.0.0.1:8085/docs) lists the available requests.
 
-| Organization | Role | Email | Demo password |
+| Organization | Role | Email | Password |
 | --- | --- | --- | --- |
-| Atlas | admin | admin@atlas.test | AtlasAdmin123! |
-| Atlas | member | member@atlas.test | AtlasMember123! |
-| Boreal | admin | admin@boreal.test | BorealAdmin123! |
-| Boreal | member | member@boreal.test | BorealMember123! |
+| Atlas | Admin | admin@atlas.test | AtlasAdmin123! |
+| Atlas | Member | member@atlas.test | AtlasMember123! |
+| Boreal | Admin | admin@boreal.test | BorealAdmin123! |
+| Boreal | Member | member@boreal.test | BorealMember123! |
 
-Atlas documents are `101` and `102`; Boreal documents are `201` and `202`.
+Atlas owns documents `101` and `102`. Boreal owns `201` and `202`.
 
-The database persists in the `workboard_data` volume. Rebuilding the application keeps existing data. To update a checkout, switch to the intended branch, pull its changes and run the same Compose command. Compose rebuilds the image and replaces its service container when needed.
+After pulling app changes, run the same Compose command to rebuild and restart the service. Existing documents stay in the Docker data volume. Pulling code alone does not update a running container.
 
-Use `docker compose logs --tail 100 workboard` for startup problems and `docker compose down` to stop the application. If port 8085 is occupied, stop the unrelated container using that port.
+Use `docker compose logs --tail 100 workboard` to check startup errors, or `docker compose down` to stop the app.
 
-## Development and tests
+## Read the project
 
-With Python 3.12 and an activated virtual environment:
+| File | What it explains |
+| --- | --- |
+| [Architecture](docs/architecture.md) | How the browser, server and database work together |
+| [Security rules](docs/security-requirements.md) | Who should be allowed to do what |
+| [Threat model](docs/threat-model.md) | What could go wrong, and what still needs testing |
+| [Tests and scans](docs/security-checks.md) | How checks run and where to read their results |
+| [Findings](findings/) | Confirmed problems; each finding has its own file |
+
+## Work on a security problem
+
+Choose a scenario from the threat model. Test it and record what happens. If it is a real problem, copy the [finding template](findings/TEMPLATE.md), add a test, fix the code and check it again.
+
+Keep the before-and-after results in that finding's file. Planned tests and scanner warnings are not confirmed findings.
+
+To run the existing tests, use Python 3.12 in an activated virtual environment:
 
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest tests/ -q
 ```
-
-Tests create isolated temporary databases; they do not modify the running Docker workspace. See [contributing](CONTRIBUTING.md) for change and remediation workflows.
-
-## Repository guide
-
-| Area | Purpose |
-| --- | --- |
-| [Application](app/) | API, database setup and browser interface |
-| [Architecture](docs/architecture.md) | Components, data flows, API surface and trust boundaries |
-| [Security requirements](docs/security-requirements.md) | Intended authorization and security behavior |
-| [Threat model](docs/threat-model.md) | Attack scenarios and required controls |
-| [Security testing](docs/security-testing.md) | Current coverage and investigation queue |
-| [Findings](findings/README.md) | Validated issues, remediation status and evidence |
-| [Security checks](docs/security-checks.md) | CI tools, reports and scan policy |
-| [Tests](tests/) | Functional checks and security regressions |
-
-The [Tests](.github/workflows/tests.yml) and [Security](.github/workflows/security.yml) workflows run on pull requests to `main` and pushes to `main`. Passing CI is one input to review; assessment coverage is tracked separately.

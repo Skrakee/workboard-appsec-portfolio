@@ -1,19 +1,11 @@
-# Scope and provenance
+# About this lab
 
-## Assessment scope
+Workboard is a local learning project with sample organizations, accounts and known security weaknesses. The goal is to find, test and fix those weaknesses.
 
-Workboard is an educational workspace with seeded weaknesses and an ongoing security assessment. The assessment includes authentication, tenant/role authorization, document search/editing, comments, browser rendering, dependency review and local runtime configuration.
+Run it at `http://127.0.0.1:8085` with sample data. Do not publish the running lab on the Internet.
 
-Use synthetic accounts and data. Run the application and testing tools against the local instance at `http://127.0.0.1:8085`; preserve the loopback binding. Do not deploy this lab publicly.
+The sample passwords and signing secrets are public on purpose. They are for this lab only. Real passwords and live sign-in tokens must be hidden in reports.
 
-The host and Docker administration environment are trusted. Third-party services, cloud infrastructure and production deployment are not part of this implementation. Requirements and threat scenarios describe the intended behavior; [coverage](docs/security-testing.md) distinguishes completed work from planned investigations.
+The original before-and-after commit sequence was rebuilt from a saved copy of the vulnerable code. It shows the test and fix, but it is not the original development history. The manual requests and retest in [finding 1](findings/1-document-update.md) were performed with Burp Suite.
 
-## Development-only credentials
-
-The published demo passwords and development `APP_SECRET` values are deliberate local fixtures. They are not evidence of production secret management. Gitleaks allows only the two exact documented signing-secret strings; real credentials and live JWTs must still be removed from evidence and reports.
-
-## Provenance and evidence
-
-The application contains intentionally seeded weaknesses. The historical F-01 demonstration commit sequence was reconstructed from a preserved vulnerable source snapshot; it is not the original development timeline. The recorded original proof of concept and post-fix retest were performed manually with Burp Suite.
-
-Preserve those historical [captures and CI results](findings/evidence/F-01/README.md). They establish the documented finding's behavior at the recorded versions, not complete application security or unperformed tests. Later investigations receive their own evidence and status.
+The [threat model](docs/threat-model.md) separates completed checks from tests that still need to be done.

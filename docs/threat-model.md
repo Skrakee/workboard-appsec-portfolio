@@ -1,39 +1,115 @@
 # Threat model
 
-## Scope and assumptions
+This is a list of things that could go wrong in Workboard. Each scenario says what should happen and what has been checked. A scenario is not automatically a confirmed finding.
 
-The subject is Workboard's login, document/search/edit and comment workflows, including browser rendering and persistent SQLite data. Components and flows F1–F5 are defined in the [architecture](architecture.md); expected behavior is defined by the [security requirements](security-requirements.md).
+A JWT is the sign-in token sent with API requests. STRIDE is a way to name the type of threat; the letters below are written out.
 
-Assets are account identity, tenant-private documents, document/comment integrity, authentication secrets and service availability. Attackers may be unauthenticated clients, members, administrators of another tenant, or users placing content that another account later views.
+## 1. Pretending to be another user
 
-Accounts, roles and organization membership are seeded by the application. The current product has no registration, file upload, export, background worker or outbound integration. Those features need new modeling if introduced. The local host, Docker daemon and source checkout are trusted for this assessment.
+A user changes a sign-in token to pretend to be someone else. They may also try an expired or broken token.
 
-## Abuse scenarios and controls
+**STRIDE:** S — Spoofing.
 
-These are scenarios to assess, not a list of confirmed vulnerabilities. An implemented control still needs verification. Current evidence and investigation status belong in the [coverage register](security-testing.md#coverage-register).
+**Expected:** The server rejects the request. It loads the account, role and organization from the database.
 
-STRIDE shorthand: **S** spoofing, **T** tampering, **R** repudiation, **I** information disclosure, **D** denial of service, **E** elevation of privilege.
+**Status:** Basic login and missing-token tests exist. Changed, expired and broken tokens still need testing.
 
-| Scenario | Preconditions and attack path | Security consequence | Required control |
-| --- | --- | --- | --- |
-| TM-01 · S/E | A client submits a modified, expired or malformed JWT on F1, or tries to make supplied role/tenant fields authoritative. | Another account's identity or authority is used. | Verify token validity and load identity from the account store; reject invalid credentials and accounts. SR-01, SR-03 |
-| TM-02 · I | An authenticated account changes the document ID or search input on F2/F4 to address another tenant's data. | Private titles or content are disclosed. | Apply tenant scope to list, search and individual reads, including failure paths. SR-02 |
-| TM-03 · T | An administrator of Atlas submits an update for a Boreal document, or vice versa. | Another tenant's document is modified. | Require both administrator role and matching organization before any write; preserve data on denial. SR-02, SR-04 |
-| TM-04 · E/T | A member bypasses the hidden edit button and calls PATCH directly, possibly adding role/tenant fields. | A member gains administrative editing capability. | Enforce role on the API and ignore client assertions of authority. SR-01, SR-03, SR-04 |
-| TM-05 · I/T | A member or admin uses another tenant's document ID to list comments or create a comment on F2/F5. | Private discussions leak or unauthorized content is persisted. | Authorize the target document for both GET and POST; rejected creation must leave no row. SR-02, SR-04 |
-| TM-06 · I/T | A signed-in user supplies SQL syntax through the search query on F4. | The intended search predicate or tenant scope changes. | Bind input as parameters and test adversarial query values. SR-02, SR-05 |
-| TM-07 · T/E | A member stores markup in a comment; another member or administrator later loads it through F5/F2. | Untrusted content executes or changes the victim's page/actions. | Treat stored text as untrusted at the DOM boundary; verify behavior in another account's browser. SR-06 |
-| TM-08 · I/S | A token, signing secret or real credential is committed, attached as evidence or exposed by a report/session flow. | An observer can reuse credentials or impersonate an account. | Redact evidence, review token handling and scan history; production requires private, managed signing keys. SR-01, SR-07 |
-| TM-09 · D | A client repeats password verification, search or large-input requests on F1/F2. | CPU, memory or database contention makes the service unavailable. | Bound inputs and resource use, assess rate limits and run controlled load tests. SR-08 |
-| TM-10 · R | A user changes a document or submits a comment, but the service records insufficient actor/target/outcome context. | A disputed action cannot be investigated reliably. | Review security-event recording, attribution and secret-free log content. SR-07, SR-10 |
-| TM-11 · S/T/D | A reachable runtime dependency contains an applicable vulnerability or changes behavior during an update. | The service's security properties or availability fail. | Review dependency versions and advisories, assess usage, and validate updates against regressions. SR-09 |
+## 2. Reading another organization's document
 
-## Investigation approach
+A user changes the document ID, or uses search, to try to read another organization's documents.
 
-Start with unverified tenant boundaries and user-controlled data paths. For each scenario, identify the exact route, account and target; state the expected control; inspect the implementation; then collect reproducible evidence. Include allowed operations as well as denials so a fix does not simply disable the feature.
+**STRIDE:** I — Information disclosure.
 
-A scenario becomes a finding only when evidence supports a specific policy violation and impact. Scanner alerts and suspicious code are investigation inputs. Severity belongs to the validated finding; no numerical risk score is assigned to untested scenarios here.
+**Expected:** The server returns only documents the user may read.
 
-When routes, identity, storage, rendering or dependencies change, review the affected flows and requirements, update the coverage register, and add regression tests for confirmed issues.
+**Status:** The document list is tested for an Atlas member. Individual document reads and search need more testing.
 
-Method reference: [OWASP Threat Modeling](https://owasp.org/www-community/Threat_Modeling). The model describes what is being built, what can go wrong, intended controls and how those controls will be checked.
+## 3. Changing another organization's document
+
+An Atlas admin sends an edit request for a Boreal document, or the other way around.
+
+**STRIDE:** T — Tampering.
+
+**Expected:** The server rejects the edit and leaves the document unchanged.
+
+**Status:** Fixed and tested. See [finding 1](../findings/1-document-update.md).
+
+## 4. Editing documents as a member
+
+A member sends an edit request directly, even though the page hides the edit button.
+
+**STRIDE:** E — Elevation of privilege.
+
+**Expected:** The server rejects the edit. Sending extra role or organization fields must not help.
+
+**Status:** Atlas-member edits are rejected in the existing tests. More account combinations and extra request fields still need testing.
+
+## 5. Reading or posting comments in another organization
+
+A user changes the document ID to read another organization's comments or add a comment there.
+
+**STRIDE:** I — Information disclosure; T — Tampering.
+
+**Expected:** Both requests are rejected. A rejected request must not save a comment.
+
+**Status:** Some comment tests exist. Posting across organizations and checking both directions still need testing.
+
+## 6. Changing a database query through search
+
+A user puts SQL characters into the search box to change what the database query does.
+
+**STRIDE:** I — Information disclosure; T — Tampering.
+
+**Expected:** The server treats the search value as text and keeps results inside the user's organization.
+
+**Status:** Code review and Semgrep flagged the query. Its actual effect still needs a separate test.
+
+## 7. Running code through a saved comment
+
+A user saves a comment containing HTML or JavaScript. Another user later opens that document.
+
+**STRIDE:** T — Tampering; E — Elevation of privilege.
+
+**Expected:** The page displays safe text rather than running the comment as code.
+
+**Status:** Semgrep flagged the use of `innerHTML`. A browser test with another account is still needed.
+
+## 8. Exposing a password or sign-in token
+
+A real password, token or signing secret appears in a commit, log or report. Someone else may use it to sign in.
+
+**STRIDE:** I — Information disclosure; S — Spoofing.
+
+**Expected:** Sensitive values are kept out of reports and protected during use.
+
+**Status:** Git history is scanned and recorded tokens are hidden. Browser token handling still needs review. The published sample passwords and signing secrets are only for this local lab.
+
+## 9. Overloading the app
+
+A user repeatedly sends login, search or large requests until the app stops responding.
+
+**STRIDE:** D — Denial of service.
+
+**Expected:** Input limits and request controls protect the app from excessive work.
+
+**Status:** Some input and Docker limits exist. No load-test result is recorded.
+
+## 10. Not knowing who changed something
+
+A document changes, but the logs do not show enough information to identify the account and action.
+
+**STRIDE:** R — Repudiation.
+
+**Expected:** Important actions can be traced without logging passwords or tokens.
+
+**Status:** Logging has not yet been assessed.
+
+## 11. Using a library with a security problem
+
+A library used by the app has a known bug that may affect Workboard.
+
+**STRIDE:** The category depends on the bug. Examples include S — Spoofing, I — Information disclosure and D — Denial of service.
+
+**Expected:** Check whether the app uses the affected feature, then test a suitable update.
+
+**Status:** The library scan reported warnings. Their effect on Workboard still needs review.
